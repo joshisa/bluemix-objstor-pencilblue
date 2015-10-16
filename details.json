@@ -31,10 +31,6 @@
         {
 			"name": "container",
 			"value": ""
-        },
-        {
-			"name": "cluster",
-			"value": "dal05"
         }
 	],
 	"permissions": {
