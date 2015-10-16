@@ -325,7 +325,6 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
         // Do some deleting
         self.getToken(function(err, body) {
             console.log("Delete gettoken: " + body);
-            mediaPath = body.url + '/' + body.container + mediaPath;
             var res_handler = function(error, response, body) {
                 console.log("Entering the DELETE response handlers")
                 console.log(response.statusCode)
