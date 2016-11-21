@@ -1,9 +1,9 @@
 /*
-    Copyright (C) 2015  IBM
+    Copyright (C) 2016  IBM
     Shamelessly derived and modified from the S3-pencilblue plugin
 */
 
-module.exports = function BMObjStorModule(/*pb*/) {
+module.exports = function BMObjStorModule(pb) {
 
     /**
      * Main Module file for the Bluemix Object Storage Media Provider Plugin
@@ -18,6 +18,35 @@ module.exports = function BMObjStorModule(/*pb*/) {
      * The result should be TRUE on success and FALSE on failure
      */
     BMObjStor.onInstall = function(cb) {
+        var objStorCreds = {}
+        if (process.env.VCAP_SERVICES) {
+          try {
+              var services = JSON.parse(process.env.VCAP_SERVICES);
+              var pluginService = new pb.PluginService();
+              pb.log.silly("PencilBlue: Bluemix: Detecting object storage instance ...")
+              for (var svcName in services) {
+                  if (svcName.match(/^Object-Storage/)) {
+                      objStorCreds = services[svcName][0]['credentials'];
+                      var calculatedSettings = [{"name":"container","value":"pencilblue_images"},
+                                                {"name":"auth_url","value":objStorCreds.auth_url + "/v3/auth/tokens"},
+                                                {"name":"password","value":objStorCreds.password},
+                                                {"name":"projectId","value":objStorCreds.projectId},
+                                                {"name":"userId","value":objStorCreds.userId}];
+                      pluginService.setSettings(calculatedSettings, "bluemix-objstor-pencilblue", function(err, pluginSettings) {
+                        if (pb.util.isError(err)) {
+                            return cb(err, '');
+                        }
+                        cb(null, true);
+                      });
+                  } 
+              }
+              if (!Object.keys(objStorCreds).length) {
+                pb.log.silly("PencilBlue: Bluemix: No bound OpenStack Swift Object Storage detected");
+              }
+          } catch (e) {
+              pb.log.silly(e);
+          }
+        }
         cb(null, true);
     };
 

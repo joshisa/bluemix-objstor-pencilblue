@@ -1,27 +1,28 @@
 /*
-    Copyright (C) 2015 IBM
-    Shamelessly copied and modified from the S3-pencilblue plugin
+    Copyright (C) 2016 IBM
+    Shamelessly forked and modified from the S3-pencilblue plugin
 */
 
 module.exports = function BMObjStorMediaProviderModule(pb) {
-    
     //pb dependencies
     var util          = pb.util;
     var PluginService = pb.PluginService;
-    var request       = PluginService.require('bluemix-objstor-pencilblue', 'request');
+    var NpmPluginDependencyService = pb.NpmPluginDependencyService;
+    var request       = NpmPluginDependencyService.require('bluemix-objstor-pencilblue', 'request');
+
     /**
      * Media provider to upload files to IBM Bluemix Object Storage v1
      * @class BMObjStorMediaProvider
      * @constructor
      * @implements MediaProvider
      */
-    function BMObjStorMediaProvider() {
+    function BMObjStorMediaProvider(context) {
         /**
          *
          * @property pluginService
          * @type {PluginService}
          */
-        this.pluginService = new PluginService();
+        this.pluginService = new PluginService(context);
     };
 
     /**
@@ -30,20 +31,46 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
      * @param {Function} cb A callback that provides parameters: The first an 
      * error, if occurred.  The second is a Bluemix Obj Stor instance for interfacing with 
      * Bluemix Object Storage.  The last parameter is the hash of the plugin settings.  
-     * {"auth_uri":"", "username":"", "password":"", "container":"", "cluster":"dal05"}
+     * {"auth_uri":"", "userid":"", "password":"", "container":"", "projectid":""}
      */
     BMObjStorMediaProvider.prototype.getToken = function(cb) {
         this.pluginService.getSettingsKV('bluemix-objstor-pencilblue', function(err, setts) {
             if (util.isError(err)) {
                 return cb(err);
             }
-            var authHeader = BMObjStorMediaProvider.authHeaderCalculated(setts.username, setts.password)
+
+            //console.log(JSON.stringify(setts));
+            //var authHeader = BMObjStorMediaProvider.authHeaderCalculated(setts.username, setts.password)
+            var data = {
+              "auth": {
+                    "identity": {
+                        "methods": [
+                            "password"
+                        ],
+                        "password": {
+                            "user": {
+                                "id": setts.userId,
+                                "password": setts.password
+                            }
+                        }
+                    },
+                    "scope": {
+                        "project": {
+                            "id": setts.projectId
+                        }
+                    }
+                }
+            }
+            //require('request').debug = true
+
             var res_handler = function(error, response, res_body) {
+              var objstorbase = JSON.parse(res_body)
+              var objstorbaseurl = (objstorbase.token.catalog[7].endpoints[2].interface == 'public')?objstorbase.token.catalog[7].endpoints[2].url:'http://127.0.0.1';
               var body = {};
-              if (!error && response.statusCode == 200) {
+              if (!error && response.statusCode == 201) {
                 body = {"userid": setts.username,
-                        "token": response.headers['x-auth-token'],
-                        "url": response.headers['x-storage-url'],
+                        "token": response.headers['x-subject-token'],
+                        "url": objstorbaseurl,
                         "container": setts.container};
                 cb(null, body);
               }
@@ -52,14 +79,17 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
                 cb(null, error);
               };
             };
-            var req_options = {
-              url: setts.auth_uri + '/' + setts.username,
-              headers: {'accept': 'application/json',
-                        'Authorization': authHeader},
-              timeout: 100000,
-              method: 'GET'
-            };
 
+            // Setting up the Authentication Request to retrieve an X-Auth-Token
+            var req_options = {
+              url: setts.auth_url,
+              headers: {'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache',
+                        'Content-Length': Buffer.byteLength(JSON.stringify(data))},
+              timeout: 100000,
+              method: 'POST',
+              body: JSON.stringify(data)
+            };
             request(req_options, res_handler);
         });
     };
@@ -74,9 +104,9 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
     BMObjStorMediaProvider.prototype.createContainer = function(options, cb) {
         
        var res_handler = function(error, response, body) {
-          console.log("Entering the create container response handlers")
-          console.log(options)
-          console.log(response.statusCode)
+          pb.log.silly("Entering the create container response handlers")
+          pb.log.silly(options)
+          pb.log.silly(response.statusCode)
           if (!error) {
             cb(null, options)
           }
@@ -84,12 +114,13 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
             cb(null, error)
           }
        };
-       console.log('Create Container URL: ' + options.url + '/' + options.container)
+       pb.log.silly('Create Container URL: ' + options.url + '/' + options.container)
        var req_options = {
             url: options.url + '/' + options.container,
             headers: {'accept': 'application/json',
                   'X-Auth-Token': options.token,
-                  'x-container-read': '.r:*', 'x-cdn-ttl': '1440'},
+                  'x-container-read': '.r:*', 
+                  'x-cdn-ttl': '1440'},
             timeout: 100000,
             method: 'PUT'
        };
@@ -108,19 +139,18 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
            var self = this
            if (util.isFunction(options)) {
                 cb      = options;
-                console.log("Options: " + options)
+                pb.log.silly("Options: " + options)
                 options = {};
             }
             else if (!util.isObject(options)) {
                 return cb(new Error('The options parameter must be an object'));
             }
-           console.log("set: Body: " + JSON.stringify(options))
            mediaPath = options.url + '/' + options.container + mediaPath;
-           console.log(mediaPath);
+           pb.log.silly(mediaPath);
            var res_handler = function(error, response, body) {
-              console.log("Entering the response handlers")
-              console.log(response.statusCode)
-              console.log("RESHANDLER: " + mediaPath)
+              pb.log.silly("Entering the response handlers")
+              pb.log.silly(response.statusCode)
+              pb.log.silly("RESHANDLER: " + mediaPath)
               if (!error) {
                 cb(null, mediaPath);
               }
@@ -128,7 +158,7 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
                 cb(error);
               }
            };
-           console.log('Full MEDIA URL: ' + mediaPath)
+           pb.log.silly('Full MEDIA URL: ' + mediaPath)
            var req_options = {
                 url: mediaPath,
                 headers: {'accept': 'application/json',
@@ -148,13 +178,13 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
      * occurred and maybe something
      */
     BMObjStorMediaProvider.prototype.createReadableStream = function(mediaPath, cb) {
-       console.log("Step #3 Fired {createReadableStream}");
+       pb.log.silly("Step #3 Fired {createReadableStream}");
        var res_handler = function(error, response, body) {
-          console.log("Entering the READABLE STREAM response handlers")
-          console.log(response.statusCode)
-          console.log("EXISTS RESHANDLER: " + mediaPath)
+          pb.log.silly("Entering the READABLE STREAM response handlers")
+          pb.log.silly(response.statusCode)
+          pb.log.silly("EXISTS RESHANDLER: " + mediaPath)
        };
-       console.log('Creating Stream for URL: ' + mediaPath)
+       pb.log.silly('Creating Stream for URL: ' + mediaPath)
        var req_options = {
             url: mediaPath,
             timeout: 100000,
@@ -171,11 +201,11 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
      * occurred and maybe something
      */
     BMObjStorMediaProvider.prototype.getStream = function(mediaPath, cb) {
-        console.log("Step #3 Fired {getStream}");
+        pb.log.silly("Step #3 Fired {getStream}");
         var self = this;
         self.getToken(function(err, body) {
           mediaPath = body.url + '/' + body.container + mediaPath;
-          console.log("Inside getStream: " + mediaPath);
+          pb.log.silly("Inside getStream: " + mediaPath);
           self.exists(mediaPath, function(err, exists) {
             if (exists) {
               cb(null, self.createReadableStream(mediaPath));
@@ -208,13 +238,13 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
      * occurred and maybe something
      */
     BMObjStorMediaProvider.prototype.setStream = function(stream, mediaPath, options, cb) {
-        console.log("Step #1 Fired {setStream}")
-        console.log("MEDIAPATH: " + mediaPath)
+        pb.log.silly("Step #1 Fired {setStream}")
+        pb.log.silly("MEDIAPATH: " + mediaPath)
         var self = this;
 
         if (util.isFunction(options)) {
             cb      = options;
-            console.log("Options: " + options)
+            pb.log.silly("Options: " + options)
             options = {};
         }
         else if (!util.isObject(options)) {
@@ -228,7 +258,7 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
         stream.on('end', function() {
             var buffer = Buffer.concat(buffers);
             self.set(buffer, mediaPath, options || {}, function(err, remoteURL, result){
-              console.log("Inside setStream End: " + remoteURL);
+              pb.log.silly("Inside setStream End: " + remoteURL);
               cb(null, remoteURL, true);
             });
         });
@@ -246,17 +276,17 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
      * occurred and maybe something
      */
     BMObjStorMediaProvider.prototype.set = function(fileDataStrOrBuff, mediaPath, options, cb) {
-        console.log("Step #2 Fired {set}")
-        console.log('set: mediaPath: ' + mediaPath)
+        pb.log.silly("Step #2 Fired {set}")
+        pb.log.silly('set: mediaPath: ' + mediaPath)
         var self = this;
         self.getToken(function(err, body) {
            self.createContainer(body, function(err, body) {
               self.createFile(mediaPath, fileDataStrOrBuff, body, function(err, mediaPath) {
                 if (!err) {
-                  console.log("Success! File Created @: " + mediaPath);
+                  pb.log.silly("Success! File Created @: " + mediaPath);
                   cb(null, mediaPath, true);
                 } else {
-                  console.log("Error during file creation");
+                  pb.log.silly("Error during file creation");
                 }
               });
            });
@@ -283,9 +313,9 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
      */
     BMObjStorMediaProvider.prototype.exists = function(mediaPath, cb) {
            var res_handler = function(error, response, body) {
-              console.log("Entering the EXISTS response handlers")
-              console.log(response.statusCode)
-              console.log("EXISTS RESHANDLER: " + mediaPath)
+              pb.log.silly("Entering the EXISTS response handlers")
+              pb.log.silly(response.statusCode)
+              pb.log.silly("EXISTS RESHANDLER: " + mediaPath)
               if (!error && response.statusCode == 200) {
                 cb(null, true);
               }
@@ -295,7 +325,7 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
                 cb (null, error);
               }
            };
-           console.log('Inspecting URL: ' + mediaPath)
+           pb.log.silly('Inspecting URL: ' + mediaPath)
            var req_options = {
                 url: mediaPath,
                 timeout: 100000,
@@ -324,18 +354,19 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
         }
         // Do some deleting
         self.getToken(function(err, body) {
-            console.log("Delete gettoken: " + body);
+            pb.log.silly("Delete gettoken: " + JSON.stringify(body));
+            mediaPath = body.url + '/' + body.container + mediaPath
             var res_handler = function(error, response, body) {
-                console.log("Entering the DELETE response handlers")
-                console.log(response.statusCode)
-                console.log("DELETE RESHANDLER: " + mediaPath)
+                pb.log.silly("Entering the DELETE response handlers")
+                pb.log.silly(response.statusCode)
+                pb.log.silly("DELETE RESHANDLER: " + mediaPath)
                 if (!error) {
                   cb(null, true);
                 } else {
                   cb (error);
                 }
              };
-             console.log('Inspecting URL: ' + mediaPath)
+             pb.log.silly('Inspecting URL: ' + mediaPath)
              var req_options = {
                   url: mediaPath,
                   headers: {
@@ -358,22 +389,6 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
     BMObjStorMediaProvider.prototype.stat = function(mediaPath, cb) {
         pb.log.silly('BMObjStorMediaProvider: stat method fired');
         throw new Error('stat Not implemented!');
-    };
-
-    /**
-     * In order to fetch the Storage URL, a basic auth header needs to be given.
-     * This function calculates that header.
-     * @static
-     * @method authHeaderCalculated
-     * @param {String} userid
-     * @param {String} password
-     * @return {String} A Calculated Basic Auth Header
-     */
-    BMObjStorMediaProvider.authHeaderCalculated = function(userid, password) {
-        pb.log.silly('BMObjStorMediaProvider: authHeaderCalculated method fired');
-        authheader = "Basic " + Buffer(userid + ":" + password).toString("base64");
-        pb.log.silly('BMObjStorMediaProvider: calculated authHeader: %s', authheader);
-        return authheader;
     };
 
     //exports
