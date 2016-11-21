@@ -1,7 +1,7 @@
-Bluemix Object Storage V1 PencilBlue
+Bluemix Object Storage (Openstack Swift) PencilBlue Media Provider
 ==
 
-A plugin that allows for the Bluemix Object Storage v1 service to be the media storage for the platform.
+A plugin that allows for the Bluemix Object Storage service to be the media storage for the platform.
 
 Installation:
 
@@ -15,17 +15,18 @@ Installation:
   }
 }
 ```
-3) Start or restart your PB instance
 
-4) Navigate to **Manage Plugins** section in PencilBlue
+3) Create and Bind a Bluemix Object Storage instance to your PB instance
 
-5) Install the **bluemix-objstor-pencilblue** plugin
+4) Start or restart your PB instance.
 
-6) Upon successful install click the **Settings** button for the bluemix-objstor-pencilblue plugin
+5) Navigate to **Manage Plugins** section in PencilBlue
 
-8) Optionally, enter your **region**.
+6) Install the **bluemix-objstor-pencilblue** plugin
 
-9) Click **Save**
+7) Upon successful install click the **Settings** button for the bluemix-objstor-pencilblue plugin.  Validate that the settings have been pre-populated based on Object Storage bound to the PB Instance.  Modify as necessary.
+
+8) Click **Save**
 
 You should be good to go!
 
