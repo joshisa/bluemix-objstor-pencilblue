@@ -1,4 +1,4 @@
-Bluemix Object Storage (Openstack Swift) PencilBlue Media Provider
+Bluemix Object Storage (Openstack Swift)<br/>PencilBlue Media Provider
 ==
 
 A plugin that allows for the Bluemix Object Storage service to be the media storage for the platform.
