@@ -1,0 +1,10 @@
+{
+  "name": "Bluemix_Object_Storage_KeyStoneAuth",
+  "description": "The Bluemix Object Storage plugin provides methods to interact with a Openstack Swift Object Storage Keystone v3 Bluemix Service to implement the MediaProvider interface",
+  "license": "Apache-2.0",
+  "repository": { 
+    "type" : "git",
+    "url" : "https://github.com/joshisa/bluemix-objectstorage-pencilblue"
+  },
+  "engine": "node 0.5.x"
+}

@@ -1,9 +1,9 @@
 {
     "uid": "bluemix-objstor-pencilblue",
-    "name": "Bluemix Object Storage V1",
-	"description": "The Bluemix Object Storage plugin provides methods to interact with a Openstack Swift Object Storage v1 Bluemix Service to implement the MediaProvider interface",
-    "version": "0.1.0",
-    "pb_version": "0.4.x",
+    "name": "Bluemix_Object_Storage",
+	"description": "This plugin implements the MediaProvider interface to interact with an Openstack Swift Object Storage Bluemix Service",
+    "version": "0.2.0",
+    "pb_version": "0.7.x",
 	"author": {
 		"name": "IBM",
 		"email": "joshisa@us.ibm.com",
@@ -16,12 +16,16 @@
 		]
 	},
     "settings": [
-		{
-			"name": "auth_uri",
+		    {
+			"name": "container",
+			"value": "pencilblue_images"
+        },
+        {
+			"name": "region_id",
 			"value": ""
         },
         {
-			"name": "username",
+			"name": "auth_url",
 			"value": ""
         },
         {
@@ -29,7 +33,11 @@
 			"value": ""
         },
         {
-			"name": "container",
+			"name": "projectId",
+			"value": ""
+        },
+        {
+			"name": "userId",
 			"value": ""
         }
 	],
@@ -43,6 +51,7 @@
 		"path": "bluemix_objstor.js"
 	},
     "dependencies": {
-      "request": "*"
+      "request": "*",
+      "json-query": "2.2.0"
     }
 }
