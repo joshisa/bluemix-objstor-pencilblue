@@ -38,8 +38,8 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
         this.pluginService.getSettingsKV('bluemix-objstor-pencilblue', function(err, setts) {
             if (util.isError(err)) {
                 return cb(err);
-                
-            //console.log(JSON.stringify(setts));
+            }    
+
             var data = {
               "auth": {
                     "identity": {
