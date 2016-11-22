@@ -7,10 +7,18 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
     //pb dependencies
     var util          = pb.util;
     var PluginService = pb.PluginService;
+<<<<<<< HEAD
     var NpmPluginDependencyService = pb.NpmPluginDependencyService;
     var request       = NpmPluginDependencyService.require('bluemix-objstor-pencilblue', 'request');
     var jsonQuery = NpmPluginDependencyService.require('bluemix-objstor-pencilblue', 'json-query');
 
+||||||| merged common ancestors
+    var request       = PluginService.require('bluemix-objstor-pencilblue', 'request');
+=======
+    var NpmPluginDependencyService = pb.NpmPluginDependencyService;
+    var request       = NpmPluginDependencyService.require('bluemix-objstor-pencilblue', 'request');
+
+>>>>>>> 1880f9ba7d0da648c114aacc7727a371b0b97d12
     /**
      * Media provider to upload files to IBM Bluemix Object Storage v1
      * @class BMObjStorMediaProvider
@@ -40,6 +48,7 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
             if (util.isError(err)) {
                 return cb(err);
             }
+<<<<<<< HEAD
 
             //console.log(JSON.stringify(setts));
             var data = {
@@ -64,7 +73,37 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
             }
 
             //require('request').debug = true
+||||||| merged common ancestors
+            var authHeader = BMObjStorMediaProvider.authHeaderCalculated(setts.username, setts.password)
+=======
+
+            //console.log(JSON.stringify(setts));
+            //var authHeader = BMObjStorMediaProvider.authHeaderCalculated(setts.username, setts.password)
+            var data = {
+              "auth": {
+                    "identity": {
+                        "methods": [
+                            "password"
+                        ],
+                        "password": {
+                            "user": {
+                                "id": setts.userId,
+                                "password": setts.password
+                            }
+                        }
+                    },
+                    "scope": {
+                        "project": {
+                            "id": setts.projectId
+                        }
+                    }
+                }
+            }
+            //require('request').debug = true
+
+>>>>>>> 1880f9ba7d0da648c114aacc7727a371b0b97d12
             var res_handler = function(error, response, res_body) {
+<<<<<<< HEAD
               var objstorbase = JSON.parse(res_body)
               // Risky assumption that this will always remain in this position.  Need a more dynamic discovery.
               // var objstorbaseurl = (objstorbase.token.catalog[7].endpoints[2].interface == 'public')?objstorbase.token.catalog[7].endpoints[2].url:'http://127.0.0.1';
@@ -72,6 +111,11 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
               var endpoints = jsonQuery('token[**][name=swift & type=object-store]', {data:objstorbase}).value
               var objstorbaseurl = jsonQuery('endpoints[interface=public & region_id=' + setts.region_id + ']', {data:endpoints}).value.url
 
+||||||| merged common ancestors
+=======
+              var objstorbase = JSON.parse(res_body)
+              var objstorbaseurl = (objstorbase.token.catalog[7].endpoints[2].interface == 'public')?objstorbase.token.catalog[7].endpoints[2].url:'http://127.0.0.1';
+>>>>>>> 1880f9ba7d0da648c114aacc7727a371b0b97d12
               var body = {};
               if (!error && response.statusCode == 201) {
                 body = {"userid": setts.username,
@@ -109,9 +153,19 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
      */
     BMObjStorMediaProvider.prototype.createContainer = function(options, cb) {
        var res_handler = function(error, response, body) {
+<<<<<<< HEAD
           pb.log.debug("Entering the create container response handlers")
           pb.log.debug(options)
           pb.log.debug(response.statusCode)
+||||||| merged common ancestors
+          console.log("Entering the create container response handlers")
+          console.log(options)
+          console.log(response.statusCode)
+=======
+          pb.log.silly("Entering the create container response handlers")
+          pb.log.silly(options)
+          pb.log.silly(response.statusCode)
+>>>>>>> 1880f9ba7d0da648c114aacc7727a371b0b97d12
           if (!error) {
             cb(null, options)
           }
@@ -119,7 +173,13 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
             cb(null, error)
           }
        };
+<<<<<<< HEAD
        pb.log.debug('Create Container URL: ' + options.url + '/' + options.container)
+||||||| merged common ancestors
+       console.log('Create Container URL: ' + options.url + '/' + options.container)
+=======
+       pb.log.silly('Create Container URL: ' + options.url + '/' + options.container)
+>>>>>>> 1880f9ba7d0da648c114aacc7727a371b0b97d12
        var req_options = {
             url: options.url + '/' + options.container,
             headers: {'accept': 'application/json',
@@ -144,18 +204,40 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
            var self = this
            if (util.isFunction(options)) {
                 cb      = options;
+<<<<<<< HEAD
                 pb.log.debug("Options: " + options)
+||||||| merged common ancestors
+                console.log("Options: " + options)
+=======
+                pb.log.silly("Options: " + options)
+>>>>>>> 1880f9ba7d0da648c114aacc7727a371b0b97d12
                 options = {};
             }
             else if (!util.isObject(options)) {
                 return cb(new Error('The options parameter must be an object'));
             }
            mediaPath = options.url + '/' + options.container + mediaPath;
+<<<<<<< HEAD
            pb.log.debug(mediaPath);
+||||||| merged common ancestors
+           console.log(mediaPath);
+=======
+           pb.log.silly(mediaPath);
+>>>>>>> 1880f9ba7d0da648c114aacc7727a371b0b97d12
            var res_handler = function(error, response, body) {
+<<<<<<< HEAD
               pb.log.debug("Entering the response handlers")
               pb.log.debug(response.statusCode)
               pb.log.debug("RESHANDLER: " + mediaPath)
+||||||| merged common ancestors
+              console.log("Entering the response handlers")
+              console.log(response.statusCode)
+              console.log("RESHANDLER: " + mediaPath)
+=======
+              pb.log.silly("Entering the response handlers")
+              pb.log.silly(response.statusCode)
+              pb.log.silly("RESHANDLER: " + mediaPath)
+>>>>>>> 1880f9ba7d0da648c114aacc7727a371b0b97d12
               if (!error) {
                 cb(null, mediaPath);
               }
@@ -163,7 +245,13 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
                 cb(error);
               }
            };
+<<<<<<< HEAD
            pb.log.debug('Full MEDIA URL: ' + mediaPath)
+||||||| merged common ancestors
+           console.log('Full MEDIA URL: ' + mediaPath)
+=======
+           pb.log.silly('Full MEDIA URL: ' + mediaPath)
+>>>>>>> 1880f9ba7d0da648c114aacc7727a371b0b97d12
            var req_options = {
                 url: mediaPath,
                 headers: {'accept': 'application/json',
@@ -183,13 +271,35 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
      * occurred and maybe something
      */
     BMObjStorMediaProvider.prototype.createReadableStream = function(mediaPath, cb) {
+<<<<<<< HEAD
        pb.log.debug("Step #3 Fired {createReadableStream}");
+||||||| merged common ancestors
+       console.log("Step #3 Fired {createReadableStream}");
+=======
+       pb.log.silly("Step #3 Fired {createReadableStream}");
+>>>>>>> 1880f9ba7d0da648c114aacc7727a371b0b97d12
        var res_handler = function(error, response, body) {
+<<<<<<< HEAD
           pb.log.debug("Entering the READABLE STREAM response handlers")
           pb.log.debug(response.statusCode)
           pb.log.debug("EXISTS RESHANDLER: " + mediaPath)
+||||||| merged common ancestors
+          console.log("Entering the READABLE STREAM response handlers")
+          console.log(response.statusCode)
+          console.log("EXISTS RESHANDLER: " + mediaPath)
+=======
+          pb.log.silly("Entering the READABLE STREAM response handlers")
+          pb.log.silly(response.statusCode)
+          pb.log.silly("EXISTS RESHANDLER: " + mediaPath)
+>>>>>>> 1880f9ba7d0da648c114aacc7727a371b0b97d12
        };
+<<<<<<< HEAD
        pb.log.debug('Creating Stream for URL: ' + mediaPath)
+||||||| merged common ancestors
+       console.log('Creating Stream for URL: ' + mediaPath)
+=======
+       pb.log.silly('Creating Stream for URL: ' + mediaPath)
+>>>>>>> 1880f9ba7d0da648c114aacc7727a371b0b97d12
        var req_options = {
             url: mediaPath,
             timeout: 100000,
@@ -206,11 +316,23 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
      * occurred and maybe something
      */
     BMObjStorMediaProvider.prototype.getStream = function(mediaPath, cb) {
+<<<<<<< HEAD
         pb.log.debug("Step #3 Fired {getStream}");
+||||||| merged common ancestors
+        console.log("Step #3 Fired {getStream}");
+=======
+        pb.log.silly("Step #3 Fired {getStream}");
+>>>>>>> 1880f9ba7d0da648c114aacc7727a371b0b97d12
         var self = this;
         self.getToken(function(err, body) {
           mediaPath = body.url + '/' + body.container + mediaPath;
+<<<<<<< HEAD
           pb.log.debug("Inside getStream: " + mediaPath);
+||||||| merged common ancestors
+          console.log("Inside getStream: " + mediaPath);
+=======
+          pb.log.silly("Inside getStream: " + mediaPath);
+>>>>>>> 1880f9ba7d0da648c114aacc7727a371b0b97d12
           self.exists(mediaPath, function(err, exists) {
             if (exists) {
               cb(null, self.createReadableStream(mediaPath));
