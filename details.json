@@ -1,7 +1,7 @@
 {
     "uid": "bluemix-objstor-pencilblue",
-    "name": "Bluemix_Object_Storage",
-	"description": "This plugin implements the MediaProvider interface to interact with an Openstack Swift Object Storage Bluemix Service",
+    "name": "IBM_Bluemix_Object_Storage",
+	"description": "This plugin implements the MediaProvider interface to interact with an Openstack Swift Object Storage IBM Bluemix Service",
     "version": "0.2.0",
     "pb_version": "0.7.x",
 	"author": {

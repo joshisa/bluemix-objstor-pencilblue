@@ -19,11 +19,39 @@ module.exports = function BMObjStorModule(pb) {
      */
     BMObjStor.onInstall = function(cb) {
         var objStorCreds = {}
+        pb.cache.del('bluemix-objstor-info',function(err, result){
+          pb.log.info("PencilBlue: Bluemix: Clearing any existing object storage token caches")
+        });
+        cb(null, true);
+    };
+
+    /**
+     * Called when the application is uninstalling this plugin.  The plugin should
+     * make every effort to clean up any plugin-specific DB items or any in function
+     * overrides it makes.
+     *
+     * @param cb A callback that must be called upon completion.  cb(Error, Boolean).
+     * The result should be TRUE on success and FALSE on failure
+     */
+    BMObjStor.onUninstall = function(cb) {
+        cb(null, true);
+    };
+
+    /**
+     * Called when the application is starting up. The function is also called at
+     * the end of a successful install. It is guaranteed that all core PB services
+     * will be available including access to the core DB.
+     *
+     * @param cb A callback that must be called upon completion.  cb(Error, Boolean).
+     * The result should be TRUE on success and FALSE on failure
+     */
+    BMObjStor.onStartup = function(cb) {
+        // Run this on startup to make sure that we're refreshing with the latest creds
         if (process.env.VCAP_SERVICES) {
           try {
               var services = JSON.parse(process.env.VCAP_SERVICES);
               var pluginService = new pb.PluginService();
-              pb.log.info("PencilBlue: Bluemix: Detecting object storage instance ...")
+              pb.log.info("PencilBlue: Bluemix: Detecting/Inspecting object storage instance ...")
               for (var svcName in services) {
                   if (svcName.match(/^Object-Storage/)) {
                       objStorCreds = services[svcName][0]['credentials'];
@@ -49,30 +77,6 @@ module.exports = function BMObjStorModule(pb) {
               pb.log.debug(e);
           }
         }
-        cb(null, true);
-    };
-
-    /**
-     * Called when the application is uninstalling this plugin.  The plugin should
-     * make every effort to clean up any plugin-specific DB items or any in function
-     * overrides it makes.
-     *
-     * @param cb A callback that must be called upon completion.  cb(Error, Boolean).
-     * The result should be TRUE on success and FALSE on failure
-     */
-    BMObjStor.onUninstall = function(cb) {
-        cb(null, true);
-    };
-
-    /**
-     * Called when the application is starting up. The function is also called at
-     * the end of a successful install. It is guaranteed that all core PB services
-     * will be available including access to the core DB.
-     *
-     * @param cb A callback that must be called upon completion.  cb(Error, Boolean).
-     * The result should be TRUE on success and FALSE on failure
-     */
-    BMObjStor.onStartup = function(cb) {
         cb(null, true);
     };
 
