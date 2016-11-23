@@ -1,7 +1,7 @@
 Bluemix Object Storage (Openstack Swift)<br/>PencilBlue Media Provider
 ==
 
-A plugin that allows for the Bluemix Object Storage service to be the media storage for the platform.
+####A plugin that allows for the Bluemix Object Storage service to be the media storage for the platform.
 
 Installation:
 
@@ -34,4 +34,6 @@ You should be good to go!
 Currently there is no way to migrate data from one media provider to the other.  If "uploaded" media already exists 
 that was created from a different provider then you must delete it and upload it.  You will also have to re-link any 
 system objects that rely on that media until you can replace the content for a media object.  See 
-https://github.com/pencilblue/pencilblue/issues/218
+[https://github.com/pencilblue/pencilblue/issues/218](https://github.com/pencilblue/pencilblue/issues/218)
+
+##LICENSE:  Apache-2.0

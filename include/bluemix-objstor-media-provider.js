@@ -10,6 +10,7 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
     var NpmPluginDependencyService = pb.NpmPluginDependencyService;
     var request       = NpmPluginDependencyService.require('bluemix-objstor-pencilblue', 'request');
     var jsonQuery = NpmPluginDependencyService.require('bluemix-objstor-pencilblue', 'json-query');
+    //require('request').debug = true  Enables additional debug output via the Request module
 
     /**
      * Media provider to upload files to IBM Bluemix Object Storage
@@ -65,13 +66,8 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
                 }
             }
 
-            //require('request').debug = true
             var res_handler = function(error, response, res_body) {
               var objstorbase = JSON.parse(res_body)
-
-              // Risky assumption that this will always remain in this position.  Need a more dynamic discovery.
-              // var objstorbaseurl = (objstorbase.token.catalog[7].endpoints[2].interface == 'public')?objstorbase.token.catalog[7].endpoints[2].url:'http://127.0.0.1';
-
               // First filter cuts out everything from the response except the Swift object store section
               var endpoints = jsonQuery('token[**][name=swift & type=object-store]', {data:objstorbase}).value
               // Second filter drills down to the specific url representing a public interface within the provided region
@@ -83,7 +79,7 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
                         "url": objstorbaseurl,
                         "container": setts.container};
 
-                // Persisting token to cache.  Using a 20 hour (72000 secs) expiry
+                // Persisting token to cache.  Typically a 20 hour (72000 secs) expiration timeout
                 pb.cache.setex('bluemix-objstor-info', String(pb.config.cache.timeout), JSON.stringify(body), function(err, result) {
                     if (util.isError(err)) {
                       pb.log.debug(err)
@@ -98,7 +94,7 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
               };
             };
 
-            // Setting up the Authentication Request to retrieve an X-Auth-Token
+            // Setting up the request to retrieve an X-Auth-Token
             var req_options = {
               url: setts.auth_url,
               headers: {'Content-Type': 'application/json',
@@ -109,13 +105,13 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
               body: JSON.stringify(data)
             };
 
-            //pb.cache.del(, cb);
+            // Detecting if previous token exists and has already been cached
             pb.cache.get('bluemix-objstor-info', function(err, result){
               if (util.isError(err)) {
                   return cb(err, null);
               }
               if (result == null) {
-                pb.log.info("PencilBlue: Bluemix: Cache Retrieval -- Discovered no X-Auth-Token for reuse")
+                pb.log.info("PencilBlue: Bluemix: Cache Retrieval -- No X-Auth-Token discovered for reuse")
                 request(req_options, res_handler);
               } else {
                 pb.log.info("PencilBlue: Bluemix: Cache Retrieval -- Found an existing token");
@@ -134,17 +130,15 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
      */
     BMObjStorMediaProvider.prototype.createContainer = function(options, cb) {
        var res_handler = function(error, response, body) {
-          pb.log.debug("Entering the create container response handlers")
-          pb.log.debug(options)
-          pb.log.debug(response.statusCode)
           if (!error) {
+            pb.log.info("PencilBlue: Bluemix: " + options.container + " container successfully created.")
             cb(null, options)
           }
           else {
             cb(null, error)
           }
        };
-       pb.log.debug('Create Container URL: ' + options.url + '/' + options.container)
+       // Creating PUT request to create container with global public read ACL
        var req_options = {
             url: options.url + '/' + options.container,
             headers: {'accept': 'application/json',
@@ -155,6 +149,7 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
             method: 'PUT'
        };
 
+       // Make request
        request(req_options, res_handler);
     };
 
@@ -167,21 +162,18 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
      * This path will take on a form similar to <objstor_url>/<container>/media/2016/11/<unique_guid>.PNG
      */
     BMObjStorMediaProvider.prototype.createFile = function(mediaPath, fileDataStrOrBuff, options, cb) {
-           var self = this
            if (util.isFunction(options)) {
-                cb      = options;
-                pb.log.debug("Options: " + options)
+                cb = options;
                 options = {};
             }
             else if (!util.isObject(options)) {
                 return cb(new Error('The options parameter must be an object'));
             }
+
+           // Constructing File Object URL
+           // Object Storage URL + Target Container + Calculated FileData provided via upload
            mediaPath = options.url + '/' + options.container + mediaPath;
-           pb.log.debug(mediaPath);
            var res_handler = function(error, response, body) {
-              pb.log.debug("Entering the response handlers")
-              pb.log.debug(response.statusCode)
-              pb.log.debug("RESHANDLER: " + mediaPath)
               if (!error) {
                 cb(null, mediaPath);
               }
@@ -190,11 +182,10 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
               }
            };
 
-           pb.log.debug('Full MEDIA URL: ' + mediaPath)
            var req_options = {
                 url: mediaPath,
                 headers: {'accept': 'application/json',
-                      'X-Auth-Token': options.token},
+                          'X-Auth-Token': options.token},
                 timeout: 100000,
                 body: fileDataStrOrBuff,
                 method: 'PUT'
@@ -210,19 +201,17 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
      * TODO:  Need to add error handling
      */
     BMObjStorMediaProvider.prototype.createReadableStream = function(mediaPath, cb) {
-       pb.log.debug("Step #3 Fired {createReadableStream}");
-       var res_handler = function(error, response, body) {
-          pb.log.debug("Entering the READABLE STREAM response handlers")
-          pb.log.debug(response.statusCode)
-          pb.log.debug("EXISTS RESHANDLER: " + mediaPath)
-       };
-       pb.log.debug('Creating Stream for URL: ' + mediaPath)
-       var req_options = {
+      var res_handler = function(error, response, body) {
+        if (error) {
+          return cb(error);
+        }
+      };
+      var req_options = {
             url: mediaPath,
             timeout: 100000,
             method: 'GET'
-       };
-       return request(req_options,res_handler);
+      };
+      return request(req_options,res_handler);
     };
 
     /**
@@ -234,11 +223,9 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
      * A readable stream
      */
     BMObjStorMediaProvider.prototype.getStream = function(mediaPath, cb) {
-        pb.log.debug("Step #3 Fired {getStream}");
         var self = this;
         self.getToken(function(err, body) {
           mediaPath = body.url + '/' + body.container + mediaPath;
-          pb.log.debug("Inside getStream: " + mediaPath);
           self.exists(mediaPath, function(err, exists) {
             if (exists) {
               cb(null, self.createReadableStream(mediaPath));
@@ -267,17 +254,16 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
      * @param {ReadableStream} stream - The content stream
      * @param {String} mediaPath The path/key to the media.  Typically this will be a path
      * such as: /media/2015/10/77f75131-fcc9-456a-b423-f5ea05717a17-1444944578183.png
-     * @param {Function} cb A callback that provides two parameters: An Error, if 
-     * occurred and maybe something
+     * @param {Function} cb A callback that provides two parameters: 
+     * Returns An Error, if one occurred
+     * A url to the uploaded media
+     * Boolean result status
      */
     BMObjStorMediaProvider.prototype.setStream = function(stream, mediaPath, options, cb) {
-        pb.log.debug("Step #1 Fired {setStream}")
-        pb.log.debug("MEDIAPATH: " + mediaPath)
+        // This is where the first dominoe tumbles
         var self = this;
-
         if (util.isFunction(options)) {
             cb      = options;
-            pb.log.debug("Options: " + options)
             options = {};
         }
         else if (!util.isObject(options)) {
@@ -291,7 +277,6 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
         stream.on('end', function() {
             var buffer = Buffer.concat(buffers);
             self.set(buffer, mediaPath, options || {}, function(err, remoteURL, result){
-              pb.log.debug("Inside setStream End: " + remoteURL);
               cb(null, remoteURL, true);
             });
         });
@@ -310,14 +295,12 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
      * Generated mediapath to the resource with an acknowledgement of creation success.
      */
     BMObjStorMediaProvider.prototype.set = function(fileDataStrOrBuff, mediaPath, options, cb) {
-        pb.log.debug("Step #2 Fired {set}")
-        pb.log.debug('set: mediaPath: ' + mediaPath)
         var self = this;
         self.getToken(function(err, body) {
            self.createContainer(body, function(err, body) {
               self.createFile(mediaPath, fileDataStrOrBuff, body, function(err, mediaPath) {
                 if (!err) {
-                  pb.log.debug("Success! File Created @: " + mediaPath);
+                  pb.log.info("PencilBlue: Bluemix: File object successfully created within Bluemix Object Storage");
                   cb(null, mediaPath, true);
                 } else {
                   pb.log.debug("Error during file creation");
@@ -349,19 +332,16 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
      */
     BMObjStorMediaProvider.prototype.exists = function(mediaPath, cb) {
            var res_handler = function(error, response, body) {
-              pb.log.debug("Entering the EXISTS response handlers")
-              pb.log.debug(response.statusCode)
-              pb.log.debug("EXISTS RESHANDLER: " + mediaPath)
               if (!error && response.statusCode == 200) {
                 cb(null, true);
               }
               else if (!error) {
                 cb(null, false);
               } else {
-                cb (null, error);
+                cb (error, false);
               }
            };
-           pb.log.debug('Inspecting URL: ' + mediaPath)
+
            var req_options = {
                 url: mediaPath,
                 timeout: 100000,
@@ -389,30 +369,27 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
         else if (!util.isObject(options)) {
             return cb(new Error('The options parameter must be an object'));
         }
-        // Do some deleting
+
         self.getToken(function(err, body) {
-            pb.log.debug("Delete gettoken: " + JSON.stringify(body));
             mediaPath = body.url + '/' + body.container + mediaPath
             var res_handler = function(error, response, body) {
-                pb.log.debug("Entering the DELETE response handlers")
-                pb.log.debug(response.statusCode)
-                pb.log.debug("DELETE RESHANDLER: " + mediaPath)
                 if (!error) {
+                  pb.log.info("PencilBlue: Bluemix: File object successfully deleted")
                   cb(null, true);
                 } else {
-                  cb (error);
+                  cb (error, false);
                 }
              };
-             pb.log.debug('Inspecting URL: ' + mediaPath)
-             var req_options = {
-                  url: mediaPath,
-                  headers: {
-                    'X-Auth-Token': body.token
-                  },
-                  timeout: 100000,
-                  method: 'DELETE'
-             };
-             request(req_options,res_handler);
+
+            var req_options = {
+                 url: mediaPath,
+                 headers: {
+                   'X-Auth-Token': body.token
+                 },
+                 timeout: 100000,
+                 method: 'DELETE'
+            };
+            request(req_options,res_handler);
         });
     };
 
