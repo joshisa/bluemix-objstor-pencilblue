@@ -8,7 +8,7 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
     var util          = pb.util;
     var PluginService = pb.PluginService;
     var NpmPluginDependencyService = pb.NpmPluginDependencyService;
-    var request       = NpmPluginDependencyService.require('bluemix-objstor-pencilblue', 'request');
+    var request = NpmPluginDependencyService.require('bluemix-objstor-pencilblue', 'request');
     var jsonQuery = NpmPluginDependencyService.require('bluemix-objstor-pencilblue', 'json-query');
     //require('request').debug = true  Enables additional debug output via the Request module
 
@@ -84,7 +84,7 @@ module.exports = function BMObjStorMediaProviderModule(pb) {
                     if (util.isError(err)) {
                       pb.log.debug(err)
                     }
-                    pb.log.info("PencilBlue: Bluemix: Persisting object storage X-Auth-Token with a " + String(pb.config.cache.timeout) " seconds expiration timeout...")
+                    pb.log.info("PencilBlue: Bluemix: Persisting object storage X-Auth-Token with a " + String(pb.config.cache.timeout) + " seconds expiration timeout...");
                 });
                 cb(null, body);
               }

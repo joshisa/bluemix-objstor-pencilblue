@@ -51,7 +51,7 @@
 		"path": "bluemix_objstor.js"
 	},
     "dependencies": {
-      "request": "*",
+      "request": "2.79.0",
       "json-query": "2.2.0"
     }
 }
